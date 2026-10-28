@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "data": [
+    {
+      "TotalCount": 1,
+      "Addresses": [
+        {
+          "SettlementRef": "0e451e40-4b3a-11e4-ab6d-005056801329",
+          "SettlementStreetRef": "e0e3950d-a155-11e4-8d2b-005056801329",
+          "SettlementStreetDescription": "Шевченка",
+          "Present": "вул. Шевченка",
+          "StreetsType": "0f1d7fbb-4bba-11e4-ab6d-005056801329",
+          "StreetsTypeDescription": "вул.",
+          "Location": {
+            "lat": 0,
+            "lon": 0
+          },
+          "SettlementStreetDescriptionRu": "Шевченко"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "info": [],
+  "messageCodes": [],
+  "errorCodes": [],
+  "warningCodes": [],
+  "infoCodes": []
+}

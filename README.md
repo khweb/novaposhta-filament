@@ -1,0 +1,418 @@
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="API Нова Пошта — довідники доставки, синхронізація та REST API для Laravel і Filament" width="1200">
+</p>
+
+<p align="center">
+  <a href="https://www.php.net/"><img src="https://img.shields.io/badge/PHP-%5E8.3-777BB4?style=flat-square&amp;logo=php&amp;logoColor=white" alt="PHP ^8.3"></a>
+  <a href="https://laravel.com/docs"><img src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20?style=flat-square&amp;logo=laravel&amp;logoColor=white" alt="Laravel 12 та 13"></a>
+  <a href="https://filamentphp.com/docs/5.x"><img src="https://img.shields.io/badge/Filament-%5E5.11-FDAE4B?style=flat-square&amp;logo=filament&amp;logoColor=111827" alt="Filament ^5.11"></a>
+  <a href="https://livewire.laravel.com/"><img src="https://img.shields.io/badge/Livewire-%5E4.0-FB70A9?style=flat-square&amp;logo=livewire&amp;logoColor=white" alt="Livewire ^4.0"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=flat-square" alt="Ліцензія MIT"></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/SQLite-supported-003B57?style=flat-square&amp;logo=sqlite&amp;logoColor=white" alt="Підтримка SQLite">
+  <img src="https://img.shields.io/badge/MySQL-supported-4479A1?style=flat-square&amp;logo=mysql&amp;logoColor=white" alt="Підтримка MySQL">
+  <img src="https://img.shields.io/badge/PostgreSQL-supported-4169E1?style=flat-square&amp;logo=postgresql&amp;logoColor=white" alt="Підтримка PostgreSQL">
+</p>
+
+**Самостійний Composer-пакет для інтеграції довідників Нової пошти у Filament.** Зберігайте дані локально, оновлюйте їх у черзі та використовуйте спільний пошук через PHP, REST API й реактивний інтерфейс.
+
+[Можливості](#можливості) · [Встановлення](#встановлення) · [Права доступу](#права-доступу) · [REST API](#rest-api) · [PHP API](#php-api) · [Оновлення](#оновлення-та-розклад) · [Перевірки](#перевірки)
+
+## Можливості
+
+- **Довідники доставки:** області, райони, населені пункти, типи відділень, відділення та поштомати.
+- **Локальний пошук:** фільтри за областю, районом, населеним пунктом і типом доставки.
+- **Безпечне оновлення:** атомарна публікація перевіреного покоління; у разі помилки попередні дані залишаються доступними.
+- **Сторінки Filament:** налаштування, довідники лише для читання, журнал оновлень і перевірка доставки.
+- **Реактивні поля:** область → необов’язковий район → населений пункт → відділення або поштомат.
+- **Вулиці на запит:** кеш на 24 години та об’єднання однакових одночасних запитів.
+- **Розклад:** кожні N годин, щодня, щотижня або щомісяця.
+- **Захист ключа:** шифрування в БД та авторизація через Laravel Gates.
+- **Мови інтерфейсу:** українська, російська, англійська; резервна — українська.
+
+Поточний обсяг — адресні довідники й пошук. Створення ТТН, розрахунок вартості та відстеження відправлень до нього не входять.
+
+## Сумісність
+
+| Компонент | Підтримувані версії |
+|---|---|
+| PHP | `^8.3` |
+| Laravel | `^12.0` або `^13.0` |
+| Filament | `^5.11` |
+| Livewire | `^4.0` |
+| База даних | SQLite, MySQL, PostgreSQL |
+
+Пакет використовує стандартні компоненти й тему Filament. Власна frontend-збірка та окремий демонстраційний застосунок не потрібні.
+
+## Встановлення
+
+Пакет ще не опубліковано на Packagist. Нижче наведено встановлення з локального checkout репозиторію.
+
+### 1. Підключіть пакет через Composer
+
+Розмістіть каталог пакета поруч із Laravel-застосунком:
+
+```text
+projects/
+├── your-laravel-app/
+└── NovaPoshta-Filament/
+```
+
+Додайте до `composer.json` **Laravel-застосунку** запис у `repositories`:
+
+```json
+{
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../NovaPoshta-Filament"
+    }
+  ]
+}
+```
+
+```shell
+composer require nova-poshta/filament:@dev
+php artisan vendor:publish --tag=nova-poshta-config
+```
+
+Laravel автоматично підключає service provider пакета.
+
+### 2. Налаштуйте таблиці та чергу
+
+До перших міграцій за потреби додайте в `.env`:
+
+```dotenv
+NOVA_POSHTA_TABLE_PREFIX=api_nova_poshta_
+NOVA_POSHTA_QUEUE=nova-poshta
+```
+
+```shell
+php artisan migrate
+php artisan filament:assets
+```
+
+Префікс `api_` створить `api_areas`, `api_settlements`, `api_warehouses` тощо. Префікс з’єднання Laravel застосовується окремо: `host_` + `api_` → `host_api_areas`.
+
+Дозволено 1–32 латинські символи, цифри й підкреслення; перший символ — літера або підкреслення. **Зміна префікса не перейменовує наявні таблиці:** потрібна окрема міграція перенесення. Для rollback залишайте початкове значення.
+
+### 3. Зареєструйте плагін
+
+У наявному `PanelProvider` додайте плагін до конфігурації панелі:
+
+```php
+use Filament\Panel;
+use NovaPoshta\Filament\NovaPoshtaPlugin;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        // Решта налаштувань вашої панелі...
+        ->plugin(NovaPoshtaPlugin::make());
+}
+```
+
+### 4. Завантажте довідники
+
+Налаштуйте [Gates](#права-доступу), запустіть [worker](#оновлення-та-розклад), відкрийте **API Нова Пошта → Оновлення** та натисніть **«Оновити зараз»**.
+
+До першого успішного завантаження пошук повертає `503 directory_not_ready`.
+
+## Права доступу
+
+За замовчуванням адміністративний доступ закрито. Приклад для `AppServiceProvider::boot()`:
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('nova-poshta.view', fn ($user) => $user->is_admin);
+Gate::define('nova-poshta.manage', fn ($user) => $user->is_admin);
+Gate::define('nova-poshta.sync', fn ($user) => $user->is_admin);
+Gate::define('nova-poshta.diagnose', fn ($user) => $user->is_admin);
+```
+
+Замініть `is_admin` правилом авторизації вашого застосунку.
+
+| Gate | Призначення |
+|---|---|
+| `nova-poshta.view` | Базовий доступ до всіх сторінок |
+| `nova-poshta.manage` | Налаштування |
+| `nova-poshta.sync` | Ручне оновлення |
+| `nova-poshta.diagnose` | Перевірка доставки, підключення та ключа |
+
+Додатковий Gate не замінює базовий `view`. Перевірки виконуються на сервері під час запитів Livewire й виконання дій.
+
+### API-ключ
+
+Один спільний ключ зберігається для всього застосунку, включно з панелями й орендарями. Введіть його на сторінці налаштувань.
+
+Ключ шифрується Laravel за допомогою `APP_KEY`, прихований під час серіалізації та не завантажується у стан Livewire. Поле дозволяє замінити ключ; порожнє значення залишає попередній. Під час перенесення БД зберігайте відповідний `APP_KEY`.
+
+Довідники запитуються без ключа. Дія **«Перевірити підключення»** викликає `Address/getAreas`, а **«Перевірити збережений ключ»** — запит лише для читання `Counterparty/getCounterparties` із `Limit=1`. Дані контрагентів не зберігаються й не показуються.
+
+Пакет не журналює тіла HTTP-запитів і сирі винятки. У сторонніх інструментах налагодження застосунку налаштуйте приховування секретних HTTP-даних.
+
+## REST API
+
+Базовий шлях — `/api/nova-poshta/v1`. Усі ендпоінти публічні та використовують **GET**. Налаштування й запуск оновлень через REST недоступні.
+
+### Ендпоінти
+
+| Метод | Шлях | Опис | Додаткові фільтри |
+|---|---|---|---|
+| `GET` | `/api/nova-poshta/v1/areas` | Територіальні області | — |
+| `GET` | `/api/nova-poshta/v1/districts` | Райони | `area_ref` |
+| `GET` | `/api/nova-poshta/v1/settlements` | Населені пункти | `area_ref`, `district_ref` |
+| `GET` | `/api/nova-poshta/v1/warehouses` | Відділення й поштомати | `area_ref`, `district_ref`, `settlement_ref`, `type` |
+| `GET` | `/api/nova-poshta/v1/warehouse-types` | Типи відділень | — |
+| `GET` | `/api/nova-poshta/v1/streets` | Вулиці населеного пункту | Обов’язкові `settlement_ref` і `q` від 3 символів |
+
+### Параметри запиту
+
+| Параметр | Правила |
+|---|---|
+| `q` | Пошук за українською або російською назвою; до 100 символів |
+| `page` | Номер сторінки від `1`; типове значення `1` |
+| `per_page` | Від `1` до `100`; типове значення `20` |
+| `area_ref` | Зовнішній `Ref` області |
+| `district_ref` | Зовнішній `Ref` району |
+| `settlement_ref` | Зовнішній `Ref` населеного пункту; обов’язковий для вулиць |
+| `type` | Лише для відділень: `branch` або `parcel_locker` |
+
+Фільтри застосовуються тільки до ендпоінтів із таблиці вище. Для вулиць населений пункт має існувати в активному поколінні даних.
+
+### Приклади запитів
+
+Пошук населених пунктів:
+
+```shell
+curl --get "https://your-app.example/api/nova-poshta/v1/settlements" \
+  --data-urlencode "q=Біла" \
+  --data-urlencode "per_page=20"
+```
+
+Поштомати обраного населеного пункту:
+
+```shell
+curl --get "https://your-app.example/api/nova-poshta/v1/warehouses" \
+  --data-urlencode "settlement_ref=SETTLEMENT_REF" \
+  --data-urlencode "type=parcel_locker"
+```
+
+Пошук вулиці:
+
+```shell
+curl --get "https://your-app.example/api/nova-poshta/v1/streets" \
+  --data-urlencode "settlement_ref=SETTLEMENT_REF" \
+  --data-urlencode "q=Шев"
+```
+
+Замініть домен адресою застосунку, а `SETTLEMENT_REF` — значенням із відповіді `/settlements`.
+
+### Формат відповіді
+
+Скорочений приклад:
+
+```json
+{
+  "data": [
+    {
+      "ref": "external-ref",
+      "name": "Назва",
+      "name_ru": "Название"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 1,
+    "last_page": 1
+  },
+  "links": {
+    "first": "...?page=1",
+    "last": "...?page=1",
+    "prev": null,
+    "next": null
+  }
+}
+```
+
+Локальні довідники повертають `ref`, `name`, `name_ru`, `area_ref`, `district_ref`, `settlement_ref`, `city_ref`, `type_ref`, `type`, `address`, `latitude`, `longitude`, `schedule`, `limits`. Необов’язкові поля можуть мати значення `null`; `limits` містить наявні обмеження доставки й може бути порожнім масивом.
+
+Для вулиць повертаються `ref` (`SettlementStreetRef`), `name` (`Present`), `name_ru` та `settlement_ref`. Сортування стабільне: назва, потім `Ref`. Внутрішні числові ID не входять до публічного контракту.
+
+### Помилки та ліміти
+
+| HTTP | Значення |
+|---|---|
+| `422` | Некоректні параметри або невідомий населений пункт для вулиць |
+| `429` | Перевищено ліміт запитів |
+| `503` + `directory_not_ready` | Ще немає опублікованого покоління довідників |
+| `503` + безпечний код помилки | Зовнішній пошук вулиць недоступний або повернув некоректні дані |
+
+```json
+{"error": "directory_not_ready"}
+```
+
+Загальний ліміт REST — **60 запитів/хв на IP**; для вулиць додатково — **10 запитів/хв на IP**. Загальний ліміт зовнішніх звернень за замовчуванням — **120 запитів/хв на застосунок**. Налаштуйте trusted proxies для правильного визначення IP.
+
+### Налаштування маршрутів
+
+У `config/nova-poshta.php`:
+
+```php
+'rest' => [
+    'enabled' => true,
+    'prefix' => 'api/nova-poshta/v1',
+    'middleware' => ['api'],
+],
+```
+
+REST можна вимкнути через `NOVA_POSHTA_REST_ENABLED=false`. Після змін перебудуйте кеш конфігурації та маршрутів. Група middleware `api`, CORS і додаткова автентифікація налаштовуються в застосунку.
+
+## PHP API
+
+PHP-споживачі, REST і сторінки Filament використовують спільний сервіс пошуку:
+
+```php
+use NovaPoshta\Filament\Services\DirectorySearch;
+use NovaPoshta\Filament\Services\SyncCoordinator;
+
+$search = app(DirectorySearch::class);
+
+$areas = $search->search('areas', ['q' => 'Київ']);
+
+$settlements = $search->search('settlements', [
+    'area_ref' => $areaRef,
+    'q' => 'Біла',
+    'page' => 1,
+    'per_page' => 20,
+]);
+
+$warehouses = $search->search('warehouses', [
+    'settlement_ref' => $settlementRef,
+    'type' => 'parcel_locker',
+]);
+
+$streets = $search->search('streets', [
+    'settlement_ref' => $settlementRef,
+    'q' => 'Шев',
+]);
+
+$run = app(SyncCoordinator::class)->request();
+```
+
+`search()` повертає `LengthAwarePaginator` із масивами записів і використовує одне активне покоління на весь пошук.
+
+Для кількох узгоджених запитів отримайте `$generation = $search->snapshot()` і передавайте його в `$search->query($directory, $filters, $generation)`. Метод повертає Eloquent Builder і не застосовується до вулиць.
+
+PHP-сервіси призначені для довіреного серверного коду: застосунок перевіряє права свого користувача самостійно. Filament виконує ці перевірки через Gates.
+
+## Оновлення та розклад
+
+Автооновлення спочатку вимкнене. Запропоновані значення — щодня о **03:00**, часовий пояс **Europe/Kyiv**.
+
+| Режим | Поведінка |
+|---|---|
+| Кожні N годин | Від останнього автоматичного запуску |
+| Щодня | У вибрану хвилину місцевого часу |
+| Щотижня | У вибраний день; `1` — понеділок, `7` — неділя |
+| Щомісяця | У вибраний день; за його відсутності — останнього дня місяця |
+
+Пропущена календарна хвилина не надолужується. Якщо під час переходу на зимовий час година повторюється, завдання запускається не більш ніж один раз за місцеву дату.
+
+### Scheduler
+
+```cron
+* * * * * cd /path/to/app && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Пакет сам реєструє щохвилинну перевірку розкладу.
+
+### Queue worker
+
+```shell
+php artisan queue:work --queue=nova-poshta --timeout=7200 --tries=1
+```
+
+Використовуйте асинхронне з’єднання черги, наприклад `database` або `redis`, та створіть відповідну інфраструктуру. `QUEUE_CONNECTION=sync` виконає оновлення всередині HTTP-запиту. Для постійної роботи керуйте worker через Supervisor або systemd.
+
+`retry_after` має перевищувати `sync.timeout` — за замовчуванням `7200` секунд. Для web-процесів і worker потрібне спільне сховище кешу з атомарними блокуваннями; для кількох серверів — Redis або спільний database cache. Драйвер `array` призначений для тестів.
+
+### Синхронізація
+
+1. Ручний та автоматичний запуск отримують спільне блокування.
+2. Довідники посторінково записуються в нове покоління.
+3. Перевіряються повнота, повтори сторінок і зв’язки.
+4. Активне покоління перемикається атомарно.
+
+Ручний запуск ігнорує розклад; повторне натискання **«Оновити зараз»** повертає активне завдання. У разі збою попередні дані залишаються доступними.
+
+Журнал містить етап, кількості записів, heartbeat, час завершення та безпечну помилку. Поки завдання активне, сторінка опитує стан раз на п’ять секунд. Діагностика показує останні звернення scheduler, worker та API.
+
+Heartbeat, старший за `900` секунд, позначається помилкою під час наступного виклику scheduler навіть із вимкненим автооновленням. HTTP-повтори обмежені трьома спробами; worker очікує звільнення загального зовнішнього ліміту.
+
+## Дані та ідентифікатори
+
+| Значення | Простір ідентифікаторів |
+|---|---|
+| `getAreas.Ref`, `getCities.Area` | Області компанії |
+| `getSettlements.Area` | Територіальні області |
+| `getCities.Ref`, `getWarehouses.CityRef` | Міста компанії |
+| `getSettlements.Ref`, `getWarehouses.SettlementRef` | Населені пункти |
+
+**Не передавайте `CityRef` замість `SettlementRef`.** `/areas` повертає територіальні області, узгоджені з фільтрами населених пунктів. Обидва простори областей зберігаються з типами `company` та `territorial`.
+
+Райони формуються з `Region`, а явні пари міст і населених пунктів — із даних відділень у `city_mappings`. Вихідні дані зберігаються в JSON `payload`, включно з назвами, координатами, графіками й обмеженнями.
+
+Старі покоління автоматично не видаляються, щоб не переривати вже розпочаті пошуки. За потреби налаштуйте обслуговування з достатнім строком зберігання, виключаючи активні та незавершені покоління. Видалення активного покоління обмежене зовнішнім ключем.
+
+Вулиці кешуються на 24 години. Прострочені записи не використовуються; фізичне очищення кешу можна додати до обслуговування застосунку.
+
+## Перевірки
+
+```shell
+composer install
+composer test
+composer lint
+composer validate --strict
+```
+
+Orchestra Testbench піднімає Laravel усередині тестів. У тестах використовуються HTTP fixtures із `tests/Fixtures`; довільні мережеві запити заборонені.
+
+У попередньому локальному прогоні **42 тести та 301 твердження** успішно виконано в кожній із шести комбінацій Laravel 12/13 × SQLite/MySQL/PostgreSQL. Точні версії та обмеження наведено у [звіті перевірки](docs/verification.md). [Workflow CI](.github/workflows/tests.yml) також містить PHP 8.3/8.4.
+
+Для MySQL/PostgreSQL доступні `NP_TEST_DB_DRIVER`, `NP_TEST_DB_PORT`, `NP_TEST_DB_DATABASE`, `NP_TEST_DB_PASSWORD`. Використовуйте окрему базу `nova_poshta_test*`: тестовий bootstrap очищає її перед кожним тестом. За замовчуванням використовується SQLite у пам’яті.
+
+### Перегляд у браузері
+
+```shell
+php -S 127.0.0.1:8824 tests/Browser/router.php
+```
+
+Відкрийте `http://127.0.0.1:8824/admin/nova-poshta/tester`. Це лише тестовий стенд із тимчасовою БД та авторизованим тестовим користувачем; запускайте його на loopback.
+
+Реальна перевірка вашого ключа виконується окремо в установленому застосунку через дію **«Перевірити збережений ключ»**.
+
+## Документація та участь у розробці
+
+- [Правила внесення змін](CONTRIBUTING.md)
+- [Історія змін](CHANGELOG.md)
+- [Повідомлення про вразливості](SECURITY.md)
+- [План реалізації](docs/implementation-plan.md)
+- [Звіт перевірки](docs/verification.md)
+
+## Джерела
+
+- [Офіційна документація API Нової пошти](https://developers.novaposhta.ua/documentation)
+- [Публічний JSON endpoint](https://api.novaposhta.ua/v2.0/json/)
+- [Документація Filament 5](https://filamentphp.com/docs/5.x/plugins/panel-plugins)
+- [daaner/NovaPoshta: особливості адресного API](https://github.com/daaner/NovaPoshta/blob/master/src/Models/Address.php)
+
+Документація Нової пошти під час дослідження повернула `403`; форми відповідей додатково перевірено публічними POST-запитами 28.10.2026. Обов’язкової залежності від стороннього SDK немає.
+
+## Ліцензія
+
+[MIT](LICENSE).

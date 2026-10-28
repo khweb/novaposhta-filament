@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" fill="none" role="img" aria-labelledby="title description">
+  <title id="title">API Нова Пошта для Filament</title>
+  <desc id="description">Локальні довідники доставки, синхронізація та REST API для Laravel і Filament.</desc>
+  <rect width="1200" height="300" rx="24" fill="#101827"/>
+  <rect x="0" y="0" width="10" height="300" rx="5" fill="#EF4444"/>
+  <circle cx="1080" cy="40" r="180" fill="#172337"/>
+  <circle cx="1120" cy="280" r="140" fill="#1D2A40"/>
+  <rect x="56" y="55" width="132" height="32" rx="16" fill="#EF4444"/>
+  <text x="122" y="76" fill="white" font-family="system-ui,Segoe UI,sans-serif" font-size="13" font-weight="700" text-anchor="middle" letter-spacing="1">FILAMENT PLUGIN</text>
+  <text x="56" y="149" fill="white" font-family="system-ui,Segoe UI,sans-serif" font-size="48" font-weight="700">API Нова Пошта</text>
+  <text x="56" y="195" fill="#CBD5E1" font-family="system-ui,Segoe UI,sans-serif" font-size="23">Довідники доставки у вашому Laravel-застосунку</text>
+  <text x="56" y="247" fill="#94A3B8" font-family="system-ui,Segoe UI,sans-serif" font-size="17" letter-spacing="1">ЛОКАЛЬНІ ДАНІ  /  СИНХРОНІЗАЦІЯ  /  REST API</text>
+  <g stroke="#F8FAFC" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m1008 93 65 35v75l-65 35-65-35v-75l65-35Z"/>
+    <path d="m943 128 65 36 65-36M1008 164v74M976 111l65 35v27"/>
+  </g>
+  <path d="M900 173h-54m17-17-17 17 17 17" stroke="#EF4444" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,23 @@
+name: Запропонувати можливість
+description: Опишіть сценарій використання та бажану поведінку.
+title: "[Пропозиція]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Яку задачу потрібно вирішити?
+      description: Опишіть реальний сценарій використання.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Бажана поведінка
+      description: Як ця можливість має працювати для користувача або PHP/API-споживача?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Альтернативи та приклади
+      description: Додайте варіанти реалізації або посилання, якщо вони є.

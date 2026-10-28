@@ -1,0 +1,42 @@
+name: Повідомити про помилку
+description: Допоможіть відтворити та виправити помилку пакета.
+title: "[Помилка]: "
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Опис проблеми
+      description: Що сталося та яку поведінку ви очікували?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Кроки відтворення
+      description: Додайте мінімальний приклад без API-ключів і персональних даних.
+      placeholder: |
+        1. Налаштувати...
+        2. Відкрити...
+        3. Виконати...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Середовище
+      value: |
+        Commit або версія пакета:
+        PHP:
+        Laravel:
+        Filament:
+        Livewire:
+        СУБД та версія:
+        Драйвер черги:
+        Драйвер кешу:
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Діагностика
+      description: Безпечний код помилки з журналу та додаткові відомості. Не додавайте секрети.

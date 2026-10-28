@@ -1,0 +1,29 @@
+{
+    "name": "nova-poshta/filament",
+    "description": "Довідники Нової пошти, синхронізація та REST API для Laravel і Filament 5",
+    "keywords": ["laravel", "filament", "livewire", "nova-poshta", "novaposhta", "shipping", "ukraine", "api"],
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "filament/filament": "^5.11",
+        "livewire/livewire": "^4.0",
+        "illuminate/support": "^12.0|^13.0",
+        "illuminate/http": "^12.0|^13.0",
+        "illuminate/database": "^12.0|^13.0",
+        "illuminate/queue": "^12.0|^13.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.0|^11.0",
+        "phpunit/phpunit": "^11.5|^12.0",
+        "laravel/pint": "^1.24"
+    },
+    "autoload": {"psr-4": {"NovaPoshta\\Filament\\": "src/"}},
+    "autoload-dev": {"psr-4": {"NovaPoshta\\Filament\\Tests\\": "tests/"}},
+    "extra": {"laravel": {"providers": ["NovaPoshta\\Filament\\NovaPoshtaServiceProvider"]}},
+    "archive": {"exclude": ["/.agents", "/.github", "/.phpunit.cache", "/tests", "/vendor", "/composer.lock", "/phpunit.xml"]},
+    "scripts": {"test": "phpunit", "format": "pint", "lint": "pint --test"},
+    "config": {"sort-packages": true, "allow-plugins": {"pestphp/pest-plugin": true}},
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
