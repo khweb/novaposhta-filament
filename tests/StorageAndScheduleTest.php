@@ -25,17 +25,21 @@ final class StorageAndScheduleTest extends TestCase
     public function test_migrations_search_and_rollback_with_both_prefixes(string $packagePrefix, string $connectionPrefix): void
     {
         $migration = require __DIR__.'/../database/migrations/2026_10_28_000001_create_nova_poshta_tables.php';
+        $observability = require __DIR__.'/../database/migrations/2026_10_29_000002_add_sync_observability.php';
+        $observability->down();
         $migration->down();
         config(['nova-poshta.table_prefix' => $packagePrefix, 'database.connections.testing.prefix' => $connectionPrefix]);
         DB::purge('testing');
         $migration->up();
+        $observability->up();
         $this->assertTrue(Schema::hasTable(Tables::name('warehouses')));
         $this->assertSame('completed', $this->sync()->status);
         $this->getJson('/api/nova-poshta/v1/warehouses')->assertOk()->assertJsonPath('data.0.ref', 'warehouse');
         $rawNames = Schema::getTableListing(schemaQualified: false);
         $this->assertContains($connectionPrefix.$packagePrefix.'warehouses', $rawNames);
+        $observability->down();
         $migration->down();
-        foreach (array_merge(Tables::directories(), ['settings', 'generations', 'sync_runs', 'street_cache']) as $suffix) {
+        foreach (array_merge(Tables::directories(), ['settings', 'generations', 'sync_runs', 'sync_events', 'street_cache']) as $suffix) {
             $this->assertFalse(Schema::hasTable(Tables::name($suffix)));
         }
     }
@@ -43,10 +47,13 @@ final class StorageAndScheduleTest extends TestCase
     public function test_two_connection_prefixes_can_coexist_with_independent_indexes(): void
     {
         $migration = require __DIR__.'/../database/migrations/2026_10_28_000001_create_nova_poshta_tables.php';
+        $observability = require __DIR__.'/../database/migrations/2026_10_29_000002_add_sync_observability.php';
         DB::connection()->setTablePrefix('second_');
         try {
             $migration->up();
+            $observability->up();
             $this->assertTrue(Schema::hasTable(Tables::name('warehouses')));
+            $observability->down();
             $migration->down();
         } finally {
             DB::connection()->setTablePrefix('');

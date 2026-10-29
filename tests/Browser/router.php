@@ -4,6 +4,9 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Queue;
+use NovaPoshta\Filament\Services\SyncCoordinator;
+use NovaPoshta\Filament\Services\Synchronizer;
 use NovaPoshta\Filament\Tests\TestCase;
 
 // Test-only HTTP harness. Bind to loopback; never deploy this file.
@@ -20,8 +23,21 @@ final class BrowserHarness extends TestCase
         if (! is_file(public_path('css/filament/filament/app.css'))) {
             $this->artisan('filament:assets')->run();
         }
-        $this->sync();
-        config(['app.url' => 'http://127.0.0.1:8824']);
+        $scenario = $_SERVER['HTTP_X_NOVA_POSHTA_SCENARIO'] ?? 'completed';
+        if (in_array($scenario, ['running', 'queued'], true)) {
+            $this->fakeDirectories();
+            Queue::fake();
+            $run = app(SyncCoordinator::class)->request();
+            if ($scenario === 'running') {
+                app(Synchronizer::class)->step($run->id, 0);
+            }
+        } else {
+            $this->sync();
+            if ($scenario === 'failed') {
+                $this->sync('getWarehouses');
+            }
+        }
+        config(['app.url' => 'http://127.0.0.1:8824', 'app.debug' => true]);
 
         return $this->app;
     }

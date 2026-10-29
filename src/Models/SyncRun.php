@@ -12,7 +12,7 @@ final class SyncRun extends Model
 {
     protected $guarded = ['id'];
 
-    protected $casts = ['counts' => 'array', 'heartbeat_at' => 'immutable_datetime', 'started_at' => 'immutable_datetime', 'finished_at' => 'immutable_datetime'];
+    protected $casts = ['counts' => 'array', 'checkpoint' => 'array', 'revision' => 'integer', 'next_attempt_at' => 'immutable_datetime', 'heartbeat_at' => 'immutable_datetime', 'started_at' => 'immutable_datetime', 'finished_at' => 'immutable_datetime'];
 
     public function generation(): BelongsTo
     {

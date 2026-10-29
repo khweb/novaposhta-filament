@@ -27,6 +27,7 @@ final class PagesTest extends TestCase
     public function test_settings_page_never_hydrates_saved_key_and_allows_replacement(): void
     {
         $this->allow();
+        Queue::fake();
         Settings::current()->update(['api_key' => 'SECRET-OLD']);
         $page = Livewire::test(SettingsPage::class)->assertOk()->assertSet('data.replacement_key', null);
         $this->assertStringNotContainsString('SECRET-OLD', $page->html());

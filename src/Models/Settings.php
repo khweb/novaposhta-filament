@@ -18,6 +18,7 @@ final class Settings extends Model
         'api_key' => 'encrypted', 'schedule' => 'array',
         'last_scheduled_at' => 'immutable_datetime', 'scheduler_seen_at' => 'immutable_datetime',
         'worker_seen_at' => 'immutable_datetime', 'api_seen_at' => 'immutable_datetime',
+        'key_checked_at' => 'immutable_datetime', 'last_success_at' => 'immutable_datetime',
     ];
 
     public function generation(): BelongsTo

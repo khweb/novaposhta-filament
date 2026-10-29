@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use NovaPoshta\Filament\Services\SyncCoordinator;
+use NovaPoshta\Filament\Services\SyncJournal;
 use NovaPoshta\Filament\Support\Tables;
 
 final class NovaPoshtaServiceProvider extends ServiceProvider
@@ -43,6 +44,11 @@ final class NovaPoshtaServiceProvider extends ServiceProvider
                     app(SyncCoordinator::class)->tick();
                 }
             })->name('nova-poshta:schedule')->everyMinute()->withoutOverlapping();
+            $schedule->call(function (): void {
+                if (Schema::hasTable(Tables::name('sync_events'))) {
+                    app(SyncJournal::class)->prune();
+                }
+            })->name('nova-poshta:prune-journal')->hourly()->withoutOverlapping();
         });
     }
 }

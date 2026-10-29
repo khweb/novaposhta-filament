@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace NovaPoshta\Filament\Services;
 
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use NovaPoshta\Filament\Jobs\CheckApiKey;
 use NovaPoshta\Filament\Models\Settings;
 
 final class SettingsService
@@ -27,7 +29,13 @@ final class SettingsService
         $settings->schedule = $schedule;
         if ($replacementKey !== null && trim($replacementKey) !== '') {
             $settings->api_key = trim($replacementKey);
+            $settings->key_revision = (string) Str::uuid();
+            $settings->key_status = 'unchecked';
+            $settings->key_checked_at = null;
         }
         $settings->save();
+        if ($settings->wasChanged('key_revision')) {
+            CheckApiKey::dispatch($settings->key_revision)->onQueue(config('nova-poshta.queue'))->afterCommit();
+        }
     }
 }

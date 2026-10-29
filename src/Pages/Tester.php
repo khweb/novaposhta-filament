@@ -26,6 +26,7 @@ use NovaPoshta\Filament\Exceptions\DirectoryException;
 use NovaPoshta\Filament\Models\Settings;
 use NovaPoshta\Filament\Services\ApiClient;
 use NovaPoshta\Filament\Services\DirectorySearch;
+use NovaPoshta\Filament\Services\KeyHealth;
 use NovaPoshta\Filament\Services\SyncCoordinator;
 use NovaPoshta\Filament\Support\Lang;
 use NovaPoshta\Filament\Support\Tables;
@@ -177,7 +178,10 @@ final class Tester extends PackagePage
                 return;
             }
             if ($key) {
-                app(ApiClient::class)->validateKey(Settings::current()->api_key ?? '');
+                $status = app(KeyHealth::class)->check();
+                if ($status !== 'key_valid') {
+                    throw new DirectoryException($status);
+                }
             } else {
                 if (! app(ApiClient::class)->connection()) {
                     throw new DirectoryException('upstream_invalid_response');

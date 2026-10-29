@@ -32,11 +32,11 @@ final class SyncCoordinator
                     if ($active->heartbeat_at->greaterThan(now()->subSeconds((int) config('nova-poshta.sync.stale_seconds', 900)))) {
                         return $active;
                     }
-                    $active->update(['status' => 'failed', 'error' => 'heartbeat_expired', 'finished_at' => now()]);
-                    DB::table(Tables::name('generations'))->where('id', $active->generation_id)->where('status', 'building')->update(['status' => 'failed', 'updated_at' => now()]);
+                    app(Synchronizer::class)->fail($active->id, 'heartbeat_expired');
                     Cache::lock(self::lockName('worker'))->forceRelease();
                 }
-                $run = SyncRun::query()->create(['heartbeat_at' => now(), 'status' => 'queued', 'stage' => 'queued']);
+                $run = SyncRun::query()->create(['heartbeat_at' => now(), 'status' => 'queued', 'stage' => 'queued', 'source' => $scheduled ? 'scheduled' : 'manual']);
+                app(SyncJournal::class)->event($run, 'sync_queued');
                 if ($scheduled) {
                     $settings->last_scheduled_at = now();
                     $settings->save();
@@ -50,7 +50,7 @@ final class SyncCoordinator
             try {
                 SyncDirectories::dispatch($run->id)->onQueue(config('nova-poshta.queue'));
             } catch (\Throwable) {
-                $run->update(['status' => 'failed', 'error' => 'queue_dispatch_failed', 'finished_at' => now()]);
+                app(Synchronizer::class)->fail($run->id, 'queue_dispatch_failed');
             }
         }
 
@@ -66,7 +66,7 @@ final class SyncCoordinator
                 $stale = SyncRun::query()->whereIn('status', ['queued', 'running'])
                     ->where('heartbeat_at', '<=', now()->subSeconds((int) config('nova-poshta.sync.stale_seconds', 900)))->get();
                 foreach ($stale as $run) {
-                    $run->update(['status' => 'failed', 'error' => 'heartbeat_expired', 'finished_at' => now()]);
+                    app(Synchronizer::class)->fail($run->id, 'heartbeat_expired');
                     Cache::lock(self::lockName('worker'))->forceRelease();
                     if ($run->generation_id) {
                         DB::table(Tables::name('generations'))->where('id', $run->generation_id)->where('status', 'building')
@@ -75,6 +75,15 @@ final class SyncCoordinator
                 }
             });
         });
+        // Recover a lost dispatch or a killed worker from the persisted checkpoint.
+        // Duplicate deliveries are harmless: every job carries the expected revision.
+        $recover = $this->active();
+        if ($recover && $recover->status === 'running' && $recover->checkpoint !== null
+            && $recover->heartbeat_at->lessThan(now()->subSeconds((int) config('nova-poshta.sync.timeout', 120) + 90))
+            && ! $recover->next_attempt_at?->isFuture()) {
+            $recover->update(['heartbeat_at' => now()]);
+            SyncDirectories::dispatch($recover->id, $recover->revision)->onQueue(config('nova-poshta.queue'));
+        }
         $this->request(scheduled: true);
     }
 

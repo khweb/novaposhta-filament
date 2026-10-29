@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Section;
@@ -43,6 +44,8 @@ final class SettingsPage extends PackagePage
     {
         return $schema->statePath('data')->components([
             Section::make(Lang::get('connection'))->schema([
+                TextEntry::make('key_health')->label(Lang::get('key_health'))->state(fn () => Lang::get(Settings::current()->key_status)),
+                TextEntry::make('key_checked_at')->label(Lang::get('key_checked_at'))->state(fn () => Settings::current()->key_checked_at?->toDateTimeString() ?? Lang::get('never')),
                 TextInput::make('replacement_key')->label(Lang::get('api_key'))->password()->maxLength(512)
                     ->autocomplete('new-password')->helperText(Lang::get('key_help')),
             ]),

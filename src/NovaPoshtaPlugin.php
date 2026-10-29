@@ -8,6 +8,7 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use NovaPoshta\Filament\Pages\Directories;
 use NovaPoshta\Filament\Pages\SettingsPage;
+use NovaPoshta\Filament\Pages\SyncReportPage;
 use NovaPoshta\Filament\Pages\Tester;
 use NovaPoshta\Filament\Pages\Updates;
 
@@ -25,7 +26,7 @@ final class NovaPoshtaPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->pages([SettingsPage::class, Directories::class, Updates::class, Tester::class]);
+        $panel->pages([SettingsPage::class, Directories::class, Updates::class, Tester::class, SyncReportPage::class]);
     }
 
     public function boot(Panel $panel): void {}
