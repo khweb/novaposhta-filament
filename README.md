@@ -7,6 +7,7 @@
   <a href="https://laravel.com/docs"><img src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20?style=flat-square&amp;logo=laravel&amp;logoColor=white" alt="Laravel 12 та 13"></a>
   <a href="https://filamentphp.com/docs/5.x"><img src="https://img.shields.io/badge/Filament-%5E5.11-FDAE4B?style=flat-square&amp;logo=filament&amp;logoColor=111827" alt="Filament ^5.11"></a>
   <a href="https://livewire.laravel.com/"><img src="https://img.shields.io/badge/Livewire-%5E4.0-FB70A9?style=flat-square&amp;logo=livewire&amp;logoColor=white" alt="Livewire ^4.0"></a>
+  <a href="https://github.com/khweb/novaposhta-filament/actions/workflows/tests.yml"><img src="https://github.com/khweb/novaposhta-filament/actions/workflows/tests.yml/badge.svg?branch=main" alt="Статус CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=flat-square" alt="Ліцензія MIT"></a>
 </p>
 
@@ -48,11 +49,40 @@
 
 ## Встановлення
 
-Пакет ще не опубліковано на Packagist. Нижче наведено встановлення з локального checkout репозиторію.
+Пакет доступний на [GitHub](https://github.com/khweb/novaposhta-filament). Публікації на Packagist ще немає, тому додайте VCS-репозиторій у Composer.
 
 ### 1. Підключіть пакет через Composer
 
-Розмістіть каталог пакета поруч із Laravel-застосунком:
+Додайте до `composer.json` **Laravel-застосунку** запис у `repositories`:
+
+```json
+{
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/khweb/novaposhta-filament"
+    }
+  ]
+}
+```
+
+Якщо секція `repositories` уже існує, додайте запис до неї.
+
+```shell
+composer require nova-poshta/filament:dev-main
+php artisan vendor:publish --tag=nova-poshta-config
+```
+
+Laravel автоматично підключає service provider пакета. Гілка `main` містить поточну версію розробки; тегований реліз ще не опубліковано.
+
+<details>
+<summary>Локальна розробка через path repository</summary>
+
+Клонуйте пакет поруч із Laravel-застосунком:
+
+```shell
+git clone https://github.com/khweb/novaposhta-filament.git NovaPoshta-Filament
+```
 
 ```text
 projects/
@@ -60,7 +90,7 @@ projects/
 └── NovaPoshta-Filament/
 ```
 
-Додайте до `composer.json` **Laravel-застосунку** запис у `repositories`:
+Замість VCS-запису використовуйте:
 
 ```json
 {
@@ -73,12 +103,7 @@ projects/
 }
 ```
 
-```shell
-composer require nova-poshta/filament:@dev
-php artisan vendor:publish --tag=nova-poshta-config
-```
-
-Laravel автоматично підключає service provider пакета.
+</details>
 
 ### 2. Налаштуйте таблиці та чергу
 

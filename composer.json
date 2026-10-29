@@ -1,6 +1,11 @@
 {
     "name": "nova-poshta/filament",
     "description": "Довідники Нової пошти, синхронізація та REST API для Laravel і Filament 5",
+    "homepage": "https://github.com/khweb/novaposhta-filament",
+    "support": {
+        "issues": "https://github.com/khweb/novaposhta-filament/issues",
+        "source": "https://github.com/khweb/novaposhta-filament"
+    },
     "keywords": ["laravel", "filament", "livewire", "nova-poshta", "novaposhta", "shipping", "ukraine", "api"],
     "type": "library",
     "license": "MIT",
