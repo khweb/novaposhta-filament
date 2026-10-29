@@ -28,7 +28,7 @@
 
 MySQL і PostgreSQL запускалися окремими процесами лише на loopback із новими data directory у tests/.databases. Наявні бази OSPanel не використовувалися. Тестовий bootstrap дозволяє db:wipe лише для явно вибраних баз nova_poshta_test*.
 
-PHP syntax, Laravel Pint і composer validate --strict успішно перевірено перед постачанням. CI налаштовано додатково для PHP 8.3/8.4, Laravel 12/13, SQLite, MySQL 8.4 і PostgreSQL 17. GitHub Actions із цієї сесії не запускалися.
+PHP syntax, Laravel Pint і composer validate --strict успішно перевірено перед постачанням. CI налаштовано додатково для PHP 8.3/8.4, Laravel 12/13, SQLite, MySQL 8.4 і PostgreSQL 17. Під час початкового етапу GitHub Actions ще не запускалися; результат після публікації наведено нижче.
 
 ## Браузер
 
@@ -56,7 +56,7 @@ PHP syntax, Laravel Pint і composer validate --strict успішно перев
 
 На початку сесії граф codebase-memory не містив вихідного коду: папка була порожньою. Після створення пакета під час оновлення графа MCP закрив транспорт; підсумковий check_index_coverage також повернув Transport closed. Завершення перевірено читанням джерел, PHP syntax, тестами й браузером; повнота оновленого графа не заявляється.
 
-Покриття рядків не вимірювалося: активного Xdebug/PCOV немає. Локальна перевірка PHP 8.3 не виконувалася; її передбачено CI.
+Покриття рядків не вимірювалося: активного Xdebug/PCOV немає. Локальна перевірка PHP 8.3 не виконувалася; після публікації PHP 8.3 успішно перевірено у GitHub Actions.
 
 Після перевірок тимчасові сервери зупинено, їхні ізольовані data directory видалено. Браузерний стенд також зупинено.
 
@@ -76,4 +76,4 @@ PHP syntax, Laravel Pint і composer validate --strict успішно перев
 
 Доступ GitHub App перевірено через конектор: він бачить приватний репозиторій і читає README. Чинна інсталяція App охоплює всі репозиторії власника, тому окремий вибір нового репозиторію не потрібний.
 
-Перший GitHub Actions workflow tests запущено подією push для коміту b67284b. На момент запису статус — in_progress; успішний результат GitHub CI цим записом не заявляється. Подальше уточнення лише документації позначено skip ci.
+GitHub Actions workflow tests для коміту b67284b успішно завершив усі 12 jobs: Laravel 12/13 × PHP 8.3/8.4 × SQLite/MySQL 8.4/PostgreSQL 17. У кожному job пройдено встановлення залежностей, composer validate, Pint і тести. Результат перевірено через GitHub App. Посилання: https://github.com/khweb/novaposhta-filament/actions/runs/40831679357. Подальші уточнення лише документації позначено skip ci.
