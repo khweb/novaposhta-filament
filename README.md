@@ -7,7 +7,6 @@
   <a href="https://laravel.com/docs"><img src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20?style=flat-square&amp;logo=laravel&amp;logoColor=white" alt="Laravel 12 та 13"></a>
   <a href="https://filamentphp.com/docs/5.x"><img src="https://img.shields.io/badge/Filament-%5E5.11-FDAE4B?style=flat-square&amp;logo=filament&amp;logoColor=111827" alt="Filament ^5.11"></a>
   <a href="https://livewire.laravel.com/"><img src="https://img.shields.io/badge/Livewire-%5E4.0-FB70A9?style=flat-square&amp;logo=livewire&amp;logoColor=white" alt="Livewire ^4.0"></a>
-  <a href="https://github.com/khweb/novaposhta-filament/actions/workflows/tests.yml"><img src="https://github.com/khweb/novaposhta-filament/actions/workflows/tests.yml/badge.svg?branch=main" alt="Статус CI"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22C55E?style=flat-square" alt="Ліцензія MIT"></a>
 </p>
 
@@ -19,7 +18,29 @@
 
 **Самостійний Composer-пакет для інтеграції довідників Нової пошти у Filament.** Зберігайте дані локально, оновлюйте їх у черзі та використовуйте спільний пошук через PHP, REST API й реактивний інтерфейс.
 
-[Можливості](#можливості) · [Встановлення](#встановлення) · [Права доступу](#права-доступу) · [REST API](#rest-api) · [PHP API](#php-api) · [Оновлення](#оновлення-та-розклад) · [Перевірки](#перевірки)
+[Скриншоти](#скриншоти) · [Можливості](#можливості) · [Встановлення](#встановлення) · [Права доступу](#права-доступу) · [REST API](#rest-api) · [PHP API](#php-api) · [Оновлення](#оновлення-та-розклад) · [Перевірки](#перевірки)
+
+## Скриншоти
+
+Інтерфейс плагіна у стандартній світлій темі Filament. Знімки зроблено в локальному стенді; кількість записів і дати залежать від останнього оновлення довідників.
+
+### Налаштування
+
+Стан підключення, заміна API-ключа та розклад автоматичного оновлення. Збережений ключ не відображається.
+
+![Налаштування плагіна API Нова Пошта](docs/screenshots/settings.png)
+
+### Список відділень і поштоматів
+
+Локальний довідник із пошуком, фільтрами та переглядом відомостей про місце доставки.
+
+![Список відділень і поштоматів Нової пошти](docs/screenshots/warehouses.png)
+
+### Перевірка доставки
+
+Вибір області, населеного пункту та місця доставки, стан пошуку й діагностичні дії.
+
+![Сторінка перевірки доставки](docs/screenshots/tester.png)
 
 ## Можливості
 
@@ -409,6 +430,8 @@ Scheduler відновлює втрачений запуск наступног�
 Вулиці кешуються на 24 години. Прострочені записи не використовуються; фізичне очищення кешу можна додати до обслуговування застосунку.
 
 ## Перевірки
+
+Автоматичні запуски GitHub Actions на `push` і `pull_request` тимчасово вимкнено на запит власника. Тести збережено: їх можна запустити вручну через **Actions → tests → Run workflow** або локально командами нижче.
 
 ```shell
 composer install

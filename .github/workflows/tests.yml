@@ -1,5 +1,7 @@
 name: tests
-on: [push, pull_request]
+# Автоматичні запуски тимчасово вимкнено; тести доступні вручну в Actions.
+on:
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
