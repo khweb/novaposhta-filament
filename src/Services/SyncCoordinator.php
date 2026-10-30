@@ -29,7 +29,9 @@ final class SyncCoordinator
                 }
                 $active = SyncRun::query()->whereIn('status', ['queued', 'running'])->latest('id')->first();
                 if ($active !== null) {
-                    if ($active->heartbeat_at->greaterThan(now()->subSeconds((int) config('nova-poshta.sync.stale_seconds', 900)))) {
+                    $cutoff = now()->subSeconds((int) config('nova-poshta.sync.stale_seconds', 900));
+                    if ($active->heartbeat_at->greaterThan($cutoff)
+                        && ($active->status !== 'queued' || $active->created_at->greaterThan($cutoff))) {
                         return $active;
                     }
                     app(Synchronizer::class)->fail($active->id, 'heartbeat_expired');
@@ -63,8 +65,10 @@ final class SyncCoordinator
         Cache::lock(self::lockName('dispatch'), 15)->block(5, function (): void {
             DB::transaction(function (): void {
                 Settings::query()->lockForUpdate()->findOrFail(1);
+                $cutoff = now()->subSeconds((int) config('nova-poshta.sync.stale_seconds', 900));
                 $stale = SyncRun::query()->whereIn('status', ['queued', 'running'])
-                    ->where('heartbeat_at', '<=', now()->subSeconds((int) config('nova-poshta.sync.stale_seconds', 900)))->get();
+                    ->where(fn ($query) => $query->where('heartbeat_at', '<=', $cutoff)
+                        ->orWhere(fn ($query) => $query->where('status', 'queued')->where('created_at', '<=', $cutoff)))->get();
                 foreach ($stale as $run) {
                     app(Synchronizer::class)->fail($run->id, 'heartbeat_expired');
                     Cache::lock(self::lockName('worker'))->forceRelease();
@@ -78,7 +82,7 @@ final class SyncCoordinator
         // Recover a lost dispatch or a killed worker from the persisted checkpoint.
         // Duplicate deliveries are harmless: every job carries the expected revision.
         $recover = $this->active();
-        if ($recover && $recover->status === 'running' && $recover->checkpoint !== null
+        if ($recover && ($recover->status === 'queued' || $recover->checkpoint !== null)
             && $recover->heartbeat_at->lessThan(now()->subSeconds((int) config('nova-poshta.sync.timeout', 120) + 90))
             && ! $recover->next_attempt_at?->isFuture()) {
             $recover->update(['heartbeat_at' => now()]);

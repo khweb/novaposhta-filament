@@ -11,5 +11,5 @@ return [
         'prefix' => 'api/nova-poshta/v1',
         'middleware' => ['api'],
     ],
-    'parcel_locker_type_refs' => ['f9316480-5f2d-425d-bc2c-ac7cd29decf0'],
+    'parcel_locker_type_refs' => ['f9316480-5f2d-425d-bc2c-ac7cd29decf0', '95dc212d-479c-4ffb-a8ab-8c1b9073d0bc'],
 ];

@@ -133,6 +133,33 @@ final class SyncObservabilityTest extends TestCase
         $this->assertNull(Settings::current()->active_generation_id);
     }
 
+    public function test_partially_overlapping_pages_never_publish_or_commit_the_new_rows(): void
+    {
+        $published = $this->sync()->generation_id;
+        Http::swap(new Factory);
+        $row = fn (string $ref): array => ['Ref' => $ref, 'Description' => $ref, 'Area' => 'area', 'AreaDescription' => 'Area'];
+        Http::fakeSequence()
+            ->push(['success' => true, 'data' => [['Ref' => 'company-area', 'Description' => 'Area']]])
+            ->push(['success' => true, 'data' => [$row('one'), $row('two')]])
+            ->push(['success' => true, 'data' => [$row('two'), $row('three')]]);
+        $run = $this->queued();
+        $sync = app(Synchronizer::class);
+        $sync->step($run->id, 0);
+        $sync->step($run->id, $run->refresh()->revision);
+        try {
+            $sync->step($run->id, $run->refresh()->revision);
+            $this->fail('Overlapping pages must be rejected');
+        } catch (DirectoryException $exception) {
+            $this->assertSame('invalid_or_repeated_page', $exception->reason);
+        }
+
+        $this->assertSame('failed', $run->refresh()->status);
+        $this->assertSame(2, $run->counts['settlements']);
+        $this->assertSame(2, DB::table(Tables::name('settlements'))->where('generation_id', $run->generation_id)->count());
+        $this->assertFalse(DB::table(Tables::name('settlements'))->where('generation_id', $run->generation_id)->where('ref', 'three')->exists());
+        $this->assertEquals($published, Settings::current()->active_generation_id);
+    }
+
     public function test_lost_dispatch_is_recovered_and_old_revision_cannot_fail_the_run(): void
     {
         Queue::fake();
@@ -144,6 +171,39 @@ final class SyncObservabilityTest extends TestCase
         Queue::assertPushed(SyncDirectories::class, fn ($job) => $job->runId === $run->id && $job->revision === 1);
         (new SyncDirectories($run->id, 0))->failed(new \RuntimeException('old delivery'));
         $this->assertSame('running', $run->refresh()->status);
+    }
+
+    public function test_lost_initial_dispatch_is_recovered_without_creating_another_run(): void
+    {
+        Queue::fake();
+        $run = $this->queued();
+        $run->update(['heartbeat_at' => now()->subSeconds(300)]);
+
+        app(SyncCoordinator::class)->tick();
+        app(SyncCoordinator::class)->tick();
+
+        Queue::assertPushed(SyncDirectories::class, 1);
+        Queue::assertPushed(SyncDirectories::class, fn ($job) => $job->runId === $run->id && $job->revision === 0);
+        $this->assertSame(1, SyncRun::query()->count());
+        $this->assertSame('queued', $run->refresh()->status);
+        $this->assertNull($run->checkpoint);
+    }
+
+    public function test_recovering_initial_dispatch_does_not_extend_the_worker_start_deadline(): void
+    {
+        $this->freezeTime();
+        Queue::fake();
+        $run = $this->queued();
+        $this->travel(300)->seconds();
+        app(SyncCoordinator::class)->tick();
+        $this->assertSame(now()->getTimestamp(), $run->refresh()->heartbeat_at->getTimestamp());
+
+        $this->travel(600)->seconds();
+        app(SyncCoordinator::class)->tick();
+
+        $this->assertSame('failed', $run->refresh()->status);
+        $this->assertSame('heartbeat_expired', $run->error);
+        Queue::assertPushed(SyncDirectories::class, 1);
     }
 
     public function test_pruning_removes_events_but_preserves_active_runs_and_last_success(): void

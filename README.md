@@ -419,7 +419,7 @@ composer validate --strict
 
 Orchestra Testbench піднімає Laravel усередині тестів. У тестах використовуються HTTP fixtures із `tests/Fixtures`; довільні мережеві запити заборонені.
 
-Поточний набір містить **62 тести**; фінальний прогін на Laravel 13 і SQLite — **425 тверджень**. Перевірено Laravel 12/13, SQLite, MySQL і PostgreSQL; окремий інтеграційний тест запускає справжній database queue worker і перевіряє `failed_jobs`. Точні прогони та обмеження наведено у [звіті перевірки](docs/verification.md). [Workflow CI](.github/workflows/tests.yml) також містить PHP 8.3/8.4.
+Поточний набір містить **71 тест**; останній локальний прогін на Laravel 13 і SQLite — **527 тверджень**. Попередні прогони охоплювали Laravel 12/13, SQLite, MySQL і PostgreSQL; окремий інтеграційний тест запускає справжній database queue worker і перевіряє `failed_jobs`. Точні прогони та обмеження наведено у [звіті перевірки](docs/verification.md). [Workflow CI](.github/workflows/tests.yml) також містить PHP 8.3/8.4.
 
 Для MySQL/PostgreSQL доступні `NP_TEST_DB_DRIVER`, `NP_TEST_DB_PORT`, `NP_TEST_DB_DATABASE`, `NP_TEST_DB_PASSWORD`. Використовуйте окрему базу `nova_poshta_test*`: тестовий bootstrap очищає її перед кожним тестом. За замовчуванням використовується SQLite у пам’яті.
 
@@ -429,9 +429,15 @@ Orchestra Testbench піднімає Laravel усередині тестів. У
 php -S 127.0.0.1:8824 tests/Browser/router.php
 ```
 
-Відкрийте `http://127.0.0.1:8824/admin/nova-poshta/tester`. Це лише тестовий стенд із тимчасовою БД та авторизованим тестовим користувачем; запускайте його на loopback.
+Відкрийте `http://127.0.0.1:8824/admin/nova-poshta/tester`. За замовчуванням стенд звертається до реального API й зберігає дані між запитами. Для завантаження та перевірки ключа запустіть окремий процес:
 
-Реальна перевірка вашого ключа виконується окремо в установленому застосунку через дію **«Перевірити збережений ключ»**.
+```shell
+php tests/Browser/console.php work
+```
+
+Запускайте оновлення на сторінці **«Оновлення»** або командою `php tests/Browser/console.php sync`. Команда `php tests/Browser/console.php status` показує безпечний стан без ключа. Збереження ключа ставить у чергу його перевірку; завантаження довідників запускається окремо.
+
+Це локальний стенд із тестовою авторизацією та тестовим ключем шифрування: запускайте лише на loopback. Web і worker використовують одну SQLite-базу й спільний файловий кеш. Для UI fixtures передайте `X-Nova-Poshta-Scenario: completed|running|queued|failed`; ці сценарії мають окремі бази. PHPUnit-тести залишаються без мережі. Докладно: [синхронізація відділень](docs/warehouse-sync.md).
 
 ## Документація та участь у розробці
 

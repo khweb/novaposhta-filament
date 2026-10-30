@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace NovaPoshta\Filament\Pages;
 
 use Filament\Actions\Action;
-use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Components\Attributes\Exposed;
 use Filament\Support\Components\Attributes\Unexposed;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Locked;
+use NovaPoshta\Filament\Models\Settings;
 use NovaPoshta\Filament\Models\SyncEvent;
 use NovaPoshta\Filament\Models\SyncRun;
 use NovaPoshta\Filament\Services\SyncCoordinator;
-use NovaPoshta\Filament\Services\SyncReport;
 use NovaPoshta\Filament\Support\Lang;
 
 final class SyncReportPage extends PackagePage
@@ -38,6 +40,18 @@ final class SyncReportPage extends PackagePage
 
     public bool $follow = true;
 
+    #[Unexposed]
+    public function getTitle(): string
+    {
+        return Lang::get('report_title', ['id' => $this->runId]);
+    }
+
+    #[Unexposed]
+    public function getSubheading(): ?string
+    {
+        return Lang::get('report_intro');
+    }
+
     public function mount(int $runId): void
     {
         $this->runId = $runId;
@@ -57,21 +71,50 @@ final class SyncReportPage extends PackagePage
     public function content(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make(Lang::get('sync_report'))->columns(['default' => 1, 'sm' => 2, 'xl' => 4])
-                ->schema(fn () => collect(app(SyncReport::class)->summary($this->run()))->map(fn ($value, $label) => TextEntry::make('summary_'.sha1($label))->label($label)->state($value))->values()->all()),
-            Section::make(Lang::get('counts'))->schema([
-                KeyValueEntry::make('counts')->label(Lang::get('counts'))->hiddenLabel()->state(fn () => collect($this->run()->counts ?? [])->mapWithKeys(fn ($value, $key) => [Lang::get($key) => $value])->all()),
-            ])->collapsible(),
+            Section::make(Lang::get('report_metrics'))->icon(Heroicon::OutlinedChartBar)
+                ->compact()
+                ->columns(['default' => 2, 'md' => 4])->schema(
+                    collect(['request_count', 'error_count', 'retry_count', 'warning_count'])
+                        ->map(fn (string $key): TextEntry => TextEntry::make($key)->label(Lang::get($key))
+                            ->state(fn () => $this->run()->{$key})->numeric()->weight(FontWeight::SemiBold)->size(TextSize::Large)
+                            ->color(fn ($state): string => $state > 0 ? match ($key) {
+                                'error_count' => 'danger', 'retry_count', 'warning_count' => 'warning', default => 'primary',
+                            } : 'gray'))->all()
+                ),
+            Section::make(Lang::get('report_details'))->icon(Heroicon::OutlinedClock)
+                ->compact()
+                ->columns(['default' => 1, 'md' => 2, 'xl' => 3])->schema([
+                    TextEntry::make('source')->label(Lang::get('source_label'))->state(fn () => Lang::get($this->run()->source)),
+                    TextEntry::make('started')->label(Lang::get('started'))->state(fn () => $this->run()->started_at)
+                        ->dateTime('d.m.Y, H:i')->placeholder(Lang::get('waiting_worker')),
+                    TextEntry::make('finished')->label(Lang::get('finished'))->state(fn () => $this->run()->finished_at)
+                        ->dateTime('d.m.Y, H:i')->placeholder('—'),
+                    TextEntry::make('duration')->label(Lang::get('duration'))
+                        ->state(fn () => Lang::get('seconds_value', ['seconds' => (int) ($this->run()->started_at?->diffInSeconds($this->run()->finished_at ?? now()) ?? 0)])),
+                    TextEntry::make('key_health')->label(Lang::get('key_health'))
+                        ->state(fn () => $this->run()->key_status ?? 'unchecked')
+                        ->formatStateUsing(fn (string $state): string => Lang::get($state.'_short'))
+                        ->badge()->color(fn (string $state): string => match ($state) {
+                            'key_valid' => 'success', 'key_rejected' => 'danger', 'key_unavailable' => 'warning', default => 'gray',
+                        }),
+                    TextEntry::make('last_success')->label(Lang::get('last_success'))
+                        ->state(fn () => Settings::current()->last_success_at)->dateTime('d.m.Y, H:i')->placeholder(Lang::get('never')),
+                ]),
+            Section::make(Lang::get('counts'))->icon(Heroicon::OutlinedCircleStack)
+                ->columns(['default' => 1, 'sm' => 2, 'xl' => 3])
+                ->schema(fn () => collect($this->run()->counts ?? [])
+                    ->map(fn ($value, $key): TextEntry => TextEntry::make('count_'.$key)->label(Lang::get($key))->state($value)->numeric())->values()->all())
+                ->collapsed(),
         ]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('history')->label(Lang::get('updates'))->url(Updates::getUrl()),
-            Action::make('restart')->label(Lang::get('restart'))->authorize('nova-poshta.sync')
+            Action::make('history')->label(Lang::get('updates'))->icon(Heroicon::OutlinedArrowLeft)->color('gray')->url(Updates::getUrl()),
+            Action::make('restart')->label(Lang::get('restart'))->icon(Heroicon::OutlinedArrowPath)->authorize('nova-poshta.sync')
                 ->visible(fn () => $this->run()->status === 'failed')->action(fn () => $this->restart()),
-            Action::make('settings')->label(Lang::get('settings'))->authorize('nova-poshta.manage')
+            Action::make('settings')->label(Lang::get('settings'))->icon(Heroicon::OutlinedCog6Tooth)->color('gray')->authorize('nova-poshta.manage')
                 ->visible(fn () => in_array($this->run()->key_status, ['key_rejected', 'key_unavailable'], true))->url(SettingsPage::getUrl()),
         ];
     }

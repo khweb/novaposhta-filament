@@ -53,7 +53,6 @@ final class RecordNormalizer
     {
         return in_array($row['TypeOfWarehouse'] ?? '', config('nova-poshta.parcel_locker_type_refs', []), true)
             || ($row['CategoryOfWarehouse'] ?? '') === 'Postomat'
-            || ! empty($row['PostMachineType'])
             ? 'parcel_locker' : 'branch';
     }
 }
