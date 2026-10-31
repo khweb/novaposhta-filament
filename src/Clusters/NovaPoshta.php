@@ -15,6 +15,8 @@ final class NovaPoshta extends Cluster
 {
     protected static ?string $slug = 'nova-poshta';
 
+    protected static ?int $navigationSort = PHP_INT_MAX;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
